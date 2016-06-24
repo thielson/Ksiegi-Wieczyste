@@ -3,6 +3,27 @@
 (function() {
     var app = angular.module('myApp', ['onsen']);
   
+  app.factory('$departments', function($q, $http) {
+    this.get = function() {
+      var deferred = $q.defer();
+ 
+        $http.get('https://ksiegi-wieczyste.appspot.com/rest/departments').then(
+                function(response) {
+                    // Call successful.
+          deferred.resolve(response);
+                }, function(response) {
+                  console.log('Retrieving departments failed with the status code: ' + response.status);
+                  console.log(response.statusText);
+                  // Something went wrong.
+                  deferred.reject(response.statusText);
+                });
+      // Return a promise.
+      return deferred.promise;          
+    };
+
+    return this;
+  });
+  
     //Sliding menu controller, swiping management
     app.controller('SlidingMenuController', function($scope){
       
@@ -20,16 +41,39 @@
     });
 
     //Map controller
-    app.controller('MapController', function($scope, $timeout){
+    app.controller('MapController', function($scope, $timeout, $departments){
       
         $scope.map;
         $scope.markers = [];
         $scope.markerId = 1;
-          
+        
+        retrieveAll();
+        
+        function retrieveAll() {
+            $departments.get().then(function(response){
+                    $scope.deleteAllMarkers();
+                    console.log(response);
+                    angular.forEach(response.data.departments, function(department) {
+                    var latLng = new google.maps.LatLng(department.latLng.latitude, department.latLng.longitude);
+                        
+                    var marker = new google.maps.Marker({
+                        position: latLng,
+                        map: $scope.map
+                    });
+            
+                    marker.id = $scope.markerId;
+                    $scope.markerId++;
+                    $scope.markers.push(marker); 
+                        
+                    });
+                });
+        };
+       
+        
         //Map initialization  
         $timeout(function(){
       
-            var latlng = new google.maps.LatLng(35.7042995, 139.7597564);
+            var latlng = new google.maps.LatLng(50.06465007, 19.94498);
             var myOptions = {
                 zoom: 8,
                 center: latlng,
